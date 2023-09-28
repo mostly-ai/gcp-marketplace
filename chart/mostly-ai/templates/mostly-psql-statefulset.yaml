@@ -1,0 +1,109 @@
+{{- if eq .Values.PSQL.local_deployment true }}
+kind: StatefulSet
+apiVersion: apps/v1
+metadata:
+  name: {{ .Values.PSQL.name }}
+  labels:
+    component: {{ .Values.PSQL.name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: {{ .Values.PSQL.name }}
+  template:
+    metadata:
+      name: {{ .Values.PSQL.name }}
+      labels:
+        component: {{ .Values.PSQL.name }}
+    spec:
+      {{- if eq .Values.dedicatedAppNodes true }}
+      {{- include "k8s.appNodes" . | nindent 6 }}
+      {{- end }}
+      {{- if eq .Values.platform "ocp" }}
+      {{- include "ocp.securityContextTemplate" . | nindent 6 }}
+      {{- end }}
+      {{- if eq .Values.platform "k8s" }}
+      {{- include "k8s.securityContextTemplate" . | nindent 6 }}
+      {{- end }}
+      volumes:
+        - name: {{ .Values.PSQL.pvc.name }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.PSQL.pvc.name }}
+        - name: hookvolume
+          configMap:
+            name: postgres-provision
+            defaultMode: 0777
+      containers:
+        - name: {{ .Values.PSQL.name }}
+          {{- if eq .Values.platform "k8s" }}
+          {{- include "k8s.securityContextContainer" . | nindent 10 }}
+          {{- end }}
+          resources:
+            {{- toYaml $.Values.PSQL.resources | nindent 12 }}
+          terminationMessagePath: /dev/termination-log
+          env:
+            - name: POSTGRESQL_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: mostly-db-secret
+                  key: POSTGRESQL_DATABASE
+            - name: POSTGRESQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mostly-db-secret
+                  key: POSTGRESQL_PASSWORD
+            - name: POSTGRESQL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mostly-db-secret
+                  key: POSTGRESQL_USERNAME
+            - name: POSTGRESQL_POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mostly-db-secret
+                  key: POSTGRESQL_POSTGRES_PASSWORD
+          ports:
+            - name: psql
+              containerPort: {{ .Values.PSQL.ports.containerPort }}
+              protocol: TCP
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          volumeMounts:
+            - name: {{ .Values.PSQL.pvc.name }}
+              mountPath: {{ .Values.PSQL.pvc.mountPath }}
+            - mountPath: /opt/poststart.sh
+              subPath: poststart.sh
+              name: hookvolume
+          terminationMessagePolicy: File
+          image: {{ .Values.repository }}/{{ .Values.PSQL.image.name }}:{{ .Values.PSQL.image.tag }}
+          readinessProbe:
+            exec:
+              command:
+                - bash
+                - "-c"
+                - "PGPASSWORD=${POSTGRESQL_PASSWORD} psql -d${POSTGRESQL_DATABASE} -U${POSTGRESQL_USERNAME} -c 'SELECT 1'"
+            initialDelaySeconds: 30
+            timeoutSeconds: 5
+          livenessProbe:
+            exec:
+              command:
+                - bash
+                - "-c"
+                - "PGPASSWORD=${POSTGRESQL_PASSWORD} psql -d${POSTGRESQL_DATABASE} -U${POSTGRESQL_USERNAME} -c 'SELECT 1'"
+            initialDelaySeconds: 60
+            timeoutSeconds: 5
+          lifecycle:
+            postStart:
+              exec:
+                command: ["/bin/sh", "-c", "/opt/poststart.sh" ]
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      imagePullSecrets:
+        - name: {{ .Values.imagePullSecrets }}
+  serviceName: mostly-db
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+{{- end }}

@@ -1,0 +1,16 @@
+{{- if eq .Values.PSQL.local_deployment true }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.PSQL.pvc.name }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.PSQL.pvc.size }}
+  volumeMode: Filesystem
+  {{- if .Values.PSQL.pvc.storageClassName }}
+  storageClassName: {{ .Values.PSQL.pvc.storageClassName }}
+  {{- end }}
+{{- end }}

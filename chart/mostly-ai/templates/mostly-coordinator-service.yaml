@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.CORDINATOR.name }}
+spec:
+  ports:
+    - name: {{ .Values.CORDINATOR.name }}
+      protocol: TCP
+      port: {{ .Values.CORDINATOR.ports.containerPort }}
+      targetPort: {{ .Values.CORDINATOR.ports.containerPort }}
+  type: ClusterIP
+  selector:
+    app: {{ .Values.CORDINATOR.name }}

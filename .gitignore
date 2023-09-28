@@ -1,0 +1,10 @@
+.venv
+.vscode
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+requirements.lock
+generated-helm-charts
+*.tgz
+requirements.lock
+**/.idea

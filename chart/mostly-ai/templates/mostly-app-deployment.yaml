@@ -1,0 +1,181 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.APP.name }}
+  labels:
+    app: {{ .Values.APP.name }}
+spec:
+  replicas: {{ .Values.APP.replicasCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.APP.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.APP.name }}
+    spec:
+      {{- if eq .Values.dedicatedAppNodes true }}
+      {{- include "k8s.appNodes" . | nindent 6 }}
+      {{- end }}
+      {{- if eq .Values.platform "ocp" }}
+      {{- include "ocp.securityContextTemplate" . | nindent 6 }}
+      {{- end }}
+      {{- if eq .Values.platform "k8s" }}
+      {{- include "k8s.securityContextTemplate" . | nindent 6 }}
+      {{- end }}
+      volumes:
+        - name: mostly-data
+          persistentVolumeClaim:
+            claimName: mostly-data
+        - name: mostly-license
+          persistentVolumeClaim:
+            claimName: mostly-license
+      containers:
+        - name: {{ .Values.APP.name }}
+          resources:
+            {{- toYaml $.Values.APP.resources | nindent 12 }}
+          image: {{ .Values.repository }}/{{ .Values.APP.image.name }}:{{ .Values.APP.image.tag }}
+          {{- if eq .Values.platform "ocp" }}
+          {{- include "ocp.securityContextContainer" . | nindent 10 }}
+          {{- end }}
+          {{- if eq .Values.platform "k8s" }}
+          {{- include "k8s.securityContextContainer" . | nindent 10 }}
+          {{- end }}
+          {{- if eq .Values.platform "mac" }}
+          {{- include "mac.securityContextContainer" . | nindent 10 }}
+          {{- end }}
+          ports:
+            - name: mostly-api
+              containerPort: {{ .Values.APP.ports.containerPort }}
+              protocol: TCP
+          env:
+            - name: MOSTLY_STORAGE_CERTIFICATE-PASSPHRASE
+              valueFrom:
+                secretKeyRef:
+                  name: mostly-passphrase
+                  key: passphrase
+            - name: MOSTLY_AI_DOMAIN
+              value: {{ .Values.domain }}
+            - name: MOSTLY_APP-PACKAGE-VERSION
+              value: {{ .Values.APP.envs.mostlyAppPackageVersion }}
+            - name: SPRING_PROFILES_ACTIVE
+              value: {{ .Values.APP.envs.app_spring_profiles }}
+            - name: KEYCLOAK_ADMIN_CLIENT-SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: mostly-keycloak
+                  key: admin_client_secret
+            - name: KEYCLOAK_API-CLIENT_CLIENT-SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: mostly-keycloak
+                  key: api_client_secret
+            - name: KEYCLOAK_ADMIN_ACTIONS-REDIRECT_URI
+              value: {{ .Values.httpProtocol}}://$(MOSTLY_AI_DOMAIN)
+            - name: KEYCLOAK_SETUP_APPLICATION_URL
+              value: {{ .Values.httpProtocol}}://$(MOSTLY_AI_DOMAIN)
+            - name: KEYCLOAK_SETUP_APPLICATION-FRONTEND-URLS
+              value: {{ .Values.httpProtocol}}://$(MOSTLY_AI_DOMAIN)
+            - name: KEYCLOAK_AUTH-SERVER-URL
+              value: {{ .Values.httpProtocol }}://$(MOSTLY_AI_DOMAIN)/auth
+            - name: KEYCLOAK_INTERNAL-URI
+              value: http://mostly-keycloak:8080/auth
+            - name: MOSTLY_AI_PROTO
+              value: {{ .Values.httpProtocol | quote }}
+            - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK-SET-URI
+              value: >-
+                http://mostly-keycloak:8080/auth/realms/mostly-generate/protocol/openid-connect/certs
+            - name: KEYCLOAK_SETUP_KEYCLOAK_ADMIN_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mostly-keycloak
+                  key: admin_username
+            - name: KEYCLOAK_SETUP_KEYCLOAK_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mostly-keycloak
+                  key: admin_password
+            - name: SPRING_DATASOURCE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: postgresql
+                  key: mostly-app-jdbc-url
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql
+                  key: username
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql
+                  key: password
+            - name: COORDINATOR_DB_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: postgresql
+                  key: mostly-coordinator-jdbc-url
+            - name: COORDINATOR_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql
+                  key: username
+            - name: COORDINATOR_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql
+                  key: password
+            - name: JDK_JAVA_OPTIONS
+              value: '-Xms5g -Xmx30g'
+            - name: SPRING_RABBITMQ_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: rabbitmq
+                  key: host
+            - name: SPRING_RABBITMQ_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: rabbitmq
+                  key: port
+            - name: SPRING_RABBITMQ_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq
+                  key: username
+            - name: SPRING_RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq
+                  key: password
+            - name: MOSTLY_STORAGE_FILE_ENABLED
+              value: 'true'
+            - name: MOSTLY_STORAGE_ACTIVE-SYSTEM
+              value: file
+            - name: MOSTLY_STORAGE_FILE_BASE-PATH
+              value: /data
+            - name: MOSTLY_STORAGE_CENTRAL-STORAGE-DIR-PATH
+              value: /data
+            - name: MOSTLY_STORAGE_LOCAL-STORAGE-DIR-PATH
+              value: /data/local-storage
+            {{- if .Values.LocalStorageInvisible }}
+            - name: LOCAL_STORAGE_INVISIBLE
+              value: '{{ .Values.LocalStorageInvisible }}'
+            {{- end }}
+            {{- if .Values.APP.GoogleTagManager }}
+            - name: GOOGLE_TAG_MANAGER_ID
+              value: {{ .Values.APP.GoogleTagManager.tag }}
+            - name: GOOGLE_TAG_MANAGER_ENABLED
+              value: '{{ .Values.GoogleTagManager.enabled }}'
+            {{- end }}
+          volumeMounts:
+            - name: mostly-data
+              mountPath: /data
+            - name: mostly-license
+              mountPath: /home/default/.local/share/data/bconf/
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+      restartPolicy: Always
+      imagePullSecrets:
+        - name: {{ .Values.imagePullSecrets }}
+

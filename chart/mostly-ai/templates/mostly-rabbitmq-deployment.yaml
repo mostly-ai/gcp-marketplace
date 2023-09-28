@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.RABBITMQ.name }}
+  labels:
+    app: {{ .Values.RABBITMQ.name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.RABBITMQ.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.RABBITMQ.name }}
+    spec:
+      {{- if eq .Values.dedicatedAppNodes true }}
+      {{- include "k8s.appNodes" . | nindent 6 }}
+      {{- end }}
+      volumes:
+        - name: rabbitmq-data
+          persistentVolumeClaim:
+            claimName: rabbitmq-data
+      containers:
+        - name: {{ .Values.RABBITMQ.name }}
+          resources:
+            {{- toYaml $.Values.RABBITMQ.resources | nindent 12 }}
+          image: {{ .Values.repository }}/{{ .Values.RABBITMQ.image.name }}:{{ .Values.RABBITMQ.image.tag }}
+          ports:
+            - name: {{ .Values.RABBITMQ.name }}
+              containerPort: {{ .Values.RABBITMQ.ports.containerPort }}
+              protocol: TCP
+            - name: web-console
+              containerPort: 15672
+              protocol: TCP
+          env:
+            - name: RABBITMQ_DEFAULT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq
+                  key: username
+            - name: RABBITMQ_DEFAULT_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq
+                  key: password
+          volumeMounts:
+            - name: rabbitmq-data
+              mountPath: /var/lib/rabbitmq/mnesia
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+      imagePullSecrets:
+        - name: {{ .Values.imagePullSecrets }}
+

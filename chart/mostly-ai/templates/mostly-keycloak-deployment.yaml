@@ -1,0 +1,118 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.KEYCLOAK.name }}
+  labels:
+    app: {{ .Values.KEYCLOAK.name }}
+spec:
+  replicas: {{ .Values.KEYCLOAK.replicasCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.KEYCLOAK.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.KEYCLOAK.name }}
+    spec:
+      {{- if eq .Values.dedicatedAppNodes true }}
+      {{- include "k8s.appNodes" . | nindent 6 }}
+      {{- end }}
+      {{- if eq .Values.platform "ocp" }}
+      {{- include "ocp.securityContextTemplate" . | nindent 6 }}
+      {{- end }}
+      containers:
+        - name: {{ .Values.KEYCLOAK.name }}
+          image: {{ .Values.repository }}/{{ .Values.KEYCLOAK.image.name }}:{{ .Values.KEYCLOAK.image.tag }}
+          {{- if eq .Values.platform "ocp" }}
+          {{- include "ocp.securityContextContainer" . | nindent 10 }}
+          {{- end }}
+          ports:
+            - name: {{ .Values.KEYCLOAK.name }}
+              containerPort: {{ .Values.KEYCLOAK.ports.containerPort }}
+              protocol: TCP
+          resources:
+            {{- toYaml $.Values.KEYCLOAK.resources | nindent 12 }}
+          env:
+            - name: KEYCLOAK_HOSTNAME
+              value: {{ .Values.domain }}
+            - name: KEYCLOAK_ADMIN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.KEYCLOAK.name }}
+                  key: admin_username
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.KEYCLOAK.name }}
+                  key: admin_password
+            - name: KEYCLOAK_ADMIN_CLIENT-SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.KEYCLOAK.name }}
+                  key: admin_client_secret
+            - name: KEYCLOAK_API-CLIENT_CLIENT-SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.KEYCLOAK.name }}
+                  key: api_client_secret
+            - name: KEYCLOAK_SETUP_ENABLE_RE_CAPTCHA
+              value: '{{ .Values.KEYCLOAK.envs.keycloak_enable_re_captcha }}'
+            - name: KC_HOSTNAME_ADMIN_URL
+              value: {{ .Values.httpProtocol }}://$(KEYCLOAK_HOSTNAME)/auth
+            - name: KC_PROXY
+              value: edge
+            - name: KC_HTTPS_PORT
+              value: '443'
+            {{- if eq .Values.httpProtocol "http" }}
+            - name: KC_HOSTNAME_STRICT_HTTPS
+              value: 'false'
+            {{- end }}
+            - name: KC_DB_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: postgresql
+                  key: mostly-keycloak-jdbc-url
+            - name: KC_DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql
+                  key: username
+            - name: KC_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql
+                  key: password
+            
+            - name: DB_ADDR
+              valueFrom:
+                configMapKeyRef:
+                  name: postgresql
+                  key: host
+            - name: DB_PORT
+              value: '5432'
+            - name: DB_VENDOR
+              value: postgres
+            - name: DB_DATABASE
+              value: mostly_keycloak
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql
+                  key: password
+            - name: QUARKUS_TRANSACTION_MANAGER_DEFAULT_TRANSACTION_TIMEOUT
+              value: PT1H
+            - name: QUARKUS_TRANSACTION_MANAGER_ENABLE_RECOVERY
+              value: 'true'
+            - name: KC_DB_POOL_MAX_SIZE
+              value: '50'
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+      imagePullSecrets:
+        - name: {{ .Values.imagePullSecrets }}
+      restartPolicy: Always

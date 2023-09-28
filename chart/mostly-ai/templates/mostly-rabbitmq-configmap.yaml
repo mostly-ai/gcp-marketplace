@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.RABBITMQ.cm.name }}
+data:
+  host: {{ .Values.RABBITMQ.cm.host }}
+  port: '{{ .Values.RABBITMQ.cm.port }}'
