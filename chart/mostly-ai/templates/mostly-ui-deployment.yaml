@@ -66,6 +66,3 @@ spec:
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
           imagePullPolicy: {{ .Values.imagePullPolicy }}
-      imagePullSecrets:
-        - name: {{ .Values.imagePullSecrets }}
-  

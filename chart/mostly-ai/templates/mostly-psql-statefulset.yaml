@@ -98,8 +98,6 @@ spec:
       restartPolicy: Always
       terminationGracePeriodSeconds: 30
       dnsPolicy: ClusterFirst
-      imagePullSecrets:
-        - name: {{ .Values.imagePullSecrets }}
   serviceName: mostly-db
   podManagementPolicy: OrderedReady
   updateStrategy:

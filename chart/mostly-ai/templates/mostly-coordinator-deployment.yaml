@@ -152,6 +152,3 @@ spec:
       restartPolicy: Always
       serviceAccountName: mostly-coordinator
       serviceAccount: mostly-coordinator
-      imagePullSecrets:
-        - name: {{ .Values.imagePullSecrets }}
-

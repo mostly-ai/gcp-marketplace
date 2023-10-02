@@ -114,18 +114,51 @@ gcloud compute firewall-rules create fw-allow-health-check-and-proxy \
 gcloud container clusters get-credentials "$CLUSTER" --zone "$ZONE"
 ```
 
-#### Create a new Static IP address for the Application Load Balancer
+#### Deploy Nginx Ingress Controller to manage the public endpoints securely
 
-A permanent IP address should be reserved as a global static external IP before we create an Ingress. This step is needed since there is sometimes a big delay in obtaining a new static IP with the Kubernetes GKE ingress resource (GCE); which causes the ingress to fail starting properly; as it can not find the static IP.
+GCE Ingress has some limitations to deal with the deployed applications, as there are a lot of apps redirections and success status codes (like 303 and 404) that can not be handled by GCE. [Related issue](https://github.com/kubernetes/ingress-gce/issues/42)
+
+Therefore, Nginx Ingress Controller will be used since it's more reliable and can achieve this easily. Cert-Manager will also be used along with ClusterIssuer to automatically generate and renew TLS certificates for the public domain. So, we can use the below commands to deploy both `nginx-ingress-controller` & `cert-manager` Helm chart prior to deploy the product:
 
 ```shell
-gcloud compute addresses create mostly-ai --global --format="value(address)"
+# Add the apps repos
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm repo add jetstack https://charts.jetstack.io
+helm repo update
+
+# Install Nginx Ingress Controller
+helm install ingress-nginx \
+ingress-nginx/ingress-nginx \
+--create-namespace \
+--namespace ingress-nginx
+
+# Install cert-manager
+helm install \
+  cert-manager jetstack/cert-manager \
+  --namespace cert-manager \
+  --create-namespace \
+  --version v1.6.3 \
+  --set installCRDs=true
+
+# wait for 2 minutesfor cert-managerCRDs to be fully installed before installing the ClusterIssuer
+sleep 60
+
+# Install the Cluster Issuer (Let's Encrypt Prod)
+cd gcp-marketplace/resources/manifest
+kubectl apply -f cluster-issuer.yaml
 ```
+
+Once both `nginx-ingress-controller` & `cert-manager` are installed. Obtain the Public IP address created for Nginx Ingress so that it can be created for the domain name in the DNS system:
+
+```shell
+kubectl get svc ingress-nginx-controller --output jsonpath='{.status.loadBalancer.ingress[0].ip}'
+```
+Note down the public IP address; as it will be needed in the next step.
+
 
 #### Create the DNS record for your domain
 
-One last step is to take note of the new Static IP address (created in the previous step), and create a new `DNS A record` in your DNS system, with a value of the domain name that will be used in the Application Load Balancer for Mostly AI app.
-
+One last step is to take note of the new Static IP address (created in the previous step), and create a new `DNS A record` in your DNS system, with a value of the domain name that will be used in the Network Load Balancer for Mostly AI app.
 
 **For example:** if the domain that you will use for Mostly AI app is: `mostly.mycompany.com`, and the static IP address that got created in the previous step is: `1.2.3.4`, then you've to create a new `A` record as shown below:
 * Log into your DNS system.
@@ -188,7 +221,6 @@ Below are some other essential variables that need to be set before installing t
 export CHART_NAME=mostly-ai
 export NAMESPACE=mostlyai
 export DOMAIN_NAME=mostly.mycompany.com
-export STATIC_IP_NAME=mostly-ai # MUST match the static IP name that was created earlier
 ```
 
 #### Expand the manifest template
@@ -207,7 +239,7 @@ helm template "${CHART_NAME}" chart/mostly-ai \
   --set KEYCLOAK.image.tag="${KEYCLOAK_TAG}" \
   --set domain="${DOMAIN_NAME}" \
   --set ingress.fqdn="${DOMAIN_NAME}" \
-  --set ingress.annotations."kubernetes\.io/ingress\.global-static-ip-name"="${STATIC_IP_NAME}"
+  --set ingress.annotations."nginx\.ingress\.kubernetes\.io/cors-allow-origin"="https://*.${DOMAIN_NAME}"
 ```
 
 #### Apply the manifest to your Kubernetes cluster
@@ -227,7 +259,7 @@ helm upgrade --install "${CHART_NAME}" chart/mostly-ai \
   --set KEYCLOAK.image.tag="${KEYCLOAK_TAG}" \
   --set domain="${DOMAIN_NAME}" \
   --set ingress.fqdn="${DOMAIN_NAME}" \
-  --set ingress.annotations."kubernetes\.io/ingress\.global-static-ip-name"="${STATIC_IP_NAME}"
+  --set ingress.annotations."nginx\.ingress\.kubernetes\.io/cors-allow-origin"="https://*.${DOMAIN_NAME}"
 ```
 
 #### Check the status of the mostly-ai cluster
@@ -255,18 +287,15 @@ Deployment labels are:
   * mostly-coordinator: `app=mostly-coordinator`
 
 
-### Connecting to mostly-ai appplication:
+### Connecting to mostly-ai application:
 
 You can connect to the mostly-ai application using the domain name used in the environment variable during the application deployment using Helm.
 
-You can check the **Application Load Balancer** that got created by the GCE Ingress resource in the [Load Balancing](https://console.cloud.google.com/net-services/loadbalancing/list/loadBalancers), where you will find:
+You can check the **Network Load Balancer** that got created by the GCE Ingress resource in the [Load Balancing](https://console.cloud.google.com/net-services/loadbalancing/list/loadBalancers), where you will find:
 * The Frontend configuration:
-  * HTTPS Protocol
-  * The Static IP that was created right after we provisioned the cluster
-  * The GCP managed certificate, including its policy, tier, and many other details
-
-* Host and path rules configuration:
-  * A list of all paths defined in the ingress resource, for example, `/auth` for mostly-keycloak & `/api` for mostly-app...etc.
+  * TPC Protocol
+  * The Public static IP address that was created with Nginx Ingress deployment
+  * Premium network tier
 
 * Backend configuration:
   * List of Backend services, including the GKE nodes and their health status
@@ -296,7 +325,7 @@ helm upgrade --install "${CHART_NAME}" chart/mostly-ai \
   --set KEYCLOAK.image.tag="${KEYCLOAK_TAG}" \
   --set domain="${DOMAIN_NAME}" \
   --set ingress.fqdn="${DOMAIN_NAME}" \
-  --set ingress.annotations."kubernetes\.io/ingress\.global-static-ip-name"="${STATIC_IP_NAME}" \
+  --set ingress.annotations."nginx\.ingress\.kubernetes\.io/cors-allow-origin"="https://*.${DOMAIN_NAME}" \
   --set APP.replicasCount=3 \
 
 ```
