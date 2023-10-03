@@ -176,6 +176,3 @@ spec:
           terminationMessagePolicy: File
           imagePullPolicy: {{ .Values.imagePullPolicy }}
       restartPolicy: Always
-      imagePullSecrets:
-        - name: {{ .Values.imagePullSecrets }}
-

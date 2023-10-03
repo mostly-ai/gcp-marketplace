@@ -9,6 +9,10 @@ spec:
   {{- if .Values.ingress.ingressClassName }}
   ingressClassName: {{ .Values.ingress.ingressClassName }}
   {{- end }}
+  tls:
+  - hosts:
+    - {{ .Values.ingress.fqdn }}
+    secretName: {{ .Values.APP.name }}-tls-cert
   rules:
     - host: {{ .Values.ingress.fqdn }}
       http:
@@ -42,20 +46,3 @@ spec:
                 port:
                   number: {{ .Values.KEYCLOAK.ports.containerPort }}
 {{- end }}
----
-apiVersion: networking.gke.io/v1
-kind: ManagedCertificate
-metadata:  
-  name: managed-cert
-spec:
-  domains:
-    - {{ .Values.ingress.fqdn }}
----
-apiVersion: networking.gke.io/v1beta1
-kind: FrontendConfig
-metadata:
-  name: http-to-https
-spec:
-  redirectToHttps:
-    enabled: true
-    responseCodeName: MOVED_PERMANENTLY_DEFAULT

@@ -25,14 +25,24 @@ httpProtocol: https
 # Below there is example for Nginx ingress, if GKE ALB is used, then ingressClassName: gce have to be added to ingress section.
 # Overall you can use any ingress controller, but you have to update ingress section with proper annotations.
 ingress:
-  fqdn: mostly.example.com #<-- required to be updated with customers dedicated domain
-  ingressClassName: gce
+  fqdn: mostly.example.com
+  ingressClassName: nginx
   annotations:
-    # GCE Ingress Annotations
-    kubernetes.io/ingress.class: "gce"
-    networking.gke.io/managed-certificates: managed-cert
-    kubernetes.io/ingress.global-static-ip-name: "mostly-ai"
-    networking.gke.io/v1beta1.FrontendConfig: "http-to-https"
+    # Ingress Annotations:
+    # GCE Ingress has some limitations to deal with the deployed applications, 
+    # as there are a lot of apps redirections and success status codes (like 303 and 404) 
+    # that can not be handled by GCE. That is why we will be using Nginx Ingress Controller:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod # Let's Encrypt Prod will be used as a Cluster Issuer along with cert-manager to dynamically manage domain certificates generation and renewal
+    nginx.ingress.kubernetes.io/default-backend: ingress-nginx-controller
+    nginx.ingress.kubernetes.io/cors-allow-origin: https://*.mostly.example.com
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "PUT, GET, POST, OPTIONS"
+    nginx.ingress.kubernetes.io/proxy-body-size: 10240m
+    nginx.org/proxy-connect-timeout: "3000s" # time in seconds: "3000s"  is three thousand seconds, can be set to m for minutes, h for hours, d for days...
+    nginx.org/proxy-read-timeout: "3000s" # time in seconds: "3000s"  is three thousand seconds, can be set to m for minutes, h for hours, d for days...
+    nginx.org/client-max-body-size: "3000m" # size in Mb (m); Ignored if set to "0"
+    nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
 
 ## OpenShift platform route
 ## Below there is example for OpenShift route. 
