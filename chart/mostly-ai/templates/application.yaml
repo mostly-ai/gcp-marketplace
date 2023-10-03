@@ -1,0 +1,27 @@
+apiVersion: app.k8s.io/v1beta1
+kind: Application
+metadata:
+  name: "{{ .Release.Name }}"
+  namespace: "{{ .Release.Namespace }}"
+  labels:
+    app.kubernetes.io/name: "{{ .Release.Name }}"
+  annotations:
+    marketplace.cloud.google.com/deploy-info: '{"partner_id": "mostlyai-public", "product_id": "mostly-ai-synthetic-data-platform.endpoints.mostlyai-public.cloud.goog", "partner_name": "MOSTLY AI"}'
+spec:
+  descriptor:
+    type: MostlyAI
+    version: '1.113'
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: "{{ .Release.Name }}"
+  addOwnerRef: true
+  componentKinds:
+  - group: ''
+    kind: PersistentVolumeClaim
+  - group: ''
+    kind: Secret
+  - group: ''
+    kind: Service
+  - group: apps
+    kind: Deployment
+
