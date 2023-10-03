@@ -1,0 +1,46 @@
+{{- if .Values.CORDINATOR.pvc.storageStatic }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mostly-data-0092c
+spec:
+  capacity:
+    storage: {{ .Values.CORDINATOR.pvc.size }}
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: {{ .Values.CORDINATOR.pvc.storageClassName }}
+  csi:
+    driver: efs.csi.aws.com
+    volumeHandle: {{ .Values.CORDINATOR.pvc.efsid }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mostly-data
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: {{ .Values.CORDINATOR.pvc.storageClassName }}
+  resources:
+    requests:
+      storage: {{ .Values.CORDINATOR.pvc.size }}
+
+{{- else }}
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mostly-data
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: {{ .Values.CORDINATOR.pvc.size }}
+  volumeMode: Filesystem
+  {{- if .Values.CORDINATOR.pvc.storageClassName }}
+  storageClassName: {{ .Values.CORDINATOR.pvc.storageClassName }}
+  {{- end }}
+{{- end }}

@@ -1,0 +1,61 @@
+{{- if .Values.ingress }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Values.APP.name }}
+  annotations:
+    {{- toYaml $.Values.ingress.annotations | nindent 4 }}
+spec:
+  {{- if .Values.ingress.ingressClassName }}
+  ingressClassName: {{ .Values.ingress.ingressClassName }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.ingress.fqdn }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.UI.name }}
+                port:
+                  number: {{ .Values.UI.ports.containerPort }}
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.APP.name }}
+                port:
+                  number: {{ .Values.APP.ports.containerPort }}
+          - path: /actuator
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.APP.name }}
+                port:
+                  number: {{ .Values.APP.ports.containerPort }}
+          - path: /auth
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.KEYCLOAK.name }}
+                port:
+                  number: {{ .Values.KEYCLOAK.ports.containerPort }}
+{{- end }}
+---
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:  
+  name: managed-cert
+spec:
+  domains:
+    - {{ .Values.ingress.fqdn }}
+---
+apiVersion: networking.gke.io/v1beta1
+kind: FrontendConfig
+metadata:
+  name: http-to-https
+spec:
+  redirectToHttps:
+    enabled: true
+    responseCodeName: MOVED_PERMANENTLY_DEFAULT

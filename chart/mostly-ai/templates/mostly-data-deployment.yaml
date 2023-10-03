@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.DATA.name }}
+  labels:
+    app: {{ .Values.DATA.name }}
+spec:
+  replicas: {{ .Values.DATA.replicasCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.DATA.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.DATA.name }}
+    spec:
+      {{- if eq .Values.dedicatedAppNodes true }}
+      {{- include "k8s.appNodes" . | nindent 6 }}
+      {{- end }}
+      {{- if eq .Values.platform "ocp" }}
+      {{- include "ocp.securityContextTemplate" . | nindent 6 }}
+      {{- end }}
+      {{- if eq .Values.platform "k8s" }}
+      {{- include "k8s.securityContextTemplate" . | nindent 6 }}
+      {{- end }}
+      volumes:
+        - name: mostly-data
+          persistentVolumeClaim:
+            claimName: mostly-data
+      containers:
+        - name: {{ .Values.DATA.name }}
+          resources:
+            {{- toYaml $.Values.DATA.resources | nindent 12 }}
+          image: {{ .Values.repository }}/{{ .Values.DATA.image.name }}:{{ .Values.DATA.image.tag }}
+          {{- if eq .Values.platform "ocp" }}
+          {{- include "ocp.securityContextContainer" . | nindent 10 }}
+          {{- end }}
+          {{- if eq .Values.platform "k8s" }}
+          {{- include "k8s.securityContextContainer" . | nindent 10 }}
+          {{- end }}
+          {{- if eq .Values.platform "mac" }}
+          {{- include "mac.securityContextContainer" . | nindent 10 }}
+          {{- end }}
+          args: ["api"]
+          ports:
+            - name: mostly-data
+              containerPort: {{ .Values.DATA.ports.containerPort }}
+              protocol: TCP
+          env:
+            - name: LOG_FILE_PATH
+              value: /data/mostly-data.log
+            - name: SSL_CERTIFICATES_PASSPHRASE
+              valueFrom:
+                secretKeyRef:
+                  name: mostly-passphrase
+                  key: passphrase
+          volumeMounts:
+            - name: mostly-data
+              mountPath: /data
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+      restartPolicy: Always
+      serviceAccountName: mostly-coordinator
+      serviceAccount: mostly-coordinator
+      imagePullSecrets:
+        - name: {{ .Values.imagePullSecrets }}

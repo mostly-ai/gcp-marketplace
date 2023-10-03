@@ -1,0 +1,299 @@
+name: mostlyai
+
+domain: mostly.example.com
+
+# required to be updated with provided by Mostly AI json encoded with base64 docker config
+docker_secret: ""
+# or image pull secret name can be defined, so above json will be not used
+imagePullSecrets: ""
+
+repository: gcr.io/mostlyai-public/synthetic-data-platform # The public Google Container Registry (GCR) repository
+imagePullPolicy: IfNotPresent
+dedicatedAppNodes: false 
+
+# There are three options here: 
+# * "ocp" - OpenShift optymized
+# * "k8s" - Cloud Kubernetes optymized, 
+# * "other" - for any other configurations that turns off any optimizations, this one is the best when ocp or k8s does not work
+# Describing in short, this helper is changing required security context in deployment templates
+platform: k8s
+
+# Protocol that mostly ai application will be using
+httpProtocol: https
+
+## K8s platform ingress
+# Below there is example for Nginx ingress, if GKE ALB is used, then ingressClassName: gce have to be added to ingress section.
+# Overall you can use any ingress controller, but you have to update ingress section with proper annotations.
+ingress:
+  fqdn: mostly.example.com #<-- required to be updated with customers dedicated domain
+  ingressClassName: gce
+  annotations:
+    # GCE Ingress Annotations
+    kubernetes.io/ingress.class: "gce"
+    networking.gke.io/managed-certificates: managed-cert
+    kubernetes.io/ingress.global-static-ip-name: "mostly-ai"
+    networking.gke.io/v1beta1.FrontendConfig: "http-to-https"
+
+## OpenShift platform route
+## Below there is example for OpenShift route. 
+route: []
+
+### Postgresql settings
+PSQL:
+  local_deployment: true
+
+  ## External Postgresql database details encrypted with base64 (psql_local_deployment have to be setup to 'false')
+  # psql_secrets:
+  #   psqlMostlyPass: eE5ZZzRvTUxvb1RPdmU0MmZrd1pQQ09LWFgzaFUzUzU=
+  #   psqlMostlyUser: bW9zdGx5
+  ##
+
+  ## External Postgresql database details
+  # psql_cm:
+  #   host: mostly-db.example.com
+  #   mostly_app_db_name: mostly_app
+  #   mostly_coordinator_db_name: mostly_coordinator
+  #   mostly_keycloak_db_name: mostly_keycloak
+  #   port: '5432'
+  ## 
+
+  ## Local Postgresql deployment
+  name: mostly-psql
+  image:
+    name: postgresql
+    tag: 14.5.0-debian-11-r6
+    imagePullPolicy: IfNotPresent
+    imagePullSecrets: mostly-docker-cfg
+
+  ports:
+    name: mostly-db
+    containerPort: 5432
+
+  # Below there are minimum requirements, we suggest to update them if platform has more resources avaiable
+  resources:
+    limits:
+      cpu: 300m
+      memory: 512Mi
+    requests:
+      cpu: 10m
+      memory: 128Mi
+
+  pvc:
+    name: mostly-db
+    size: 50Gi
+    storageClassName: standard-rwo # required to be updated with storage class name that allows ReadWriteOnce access mode and it is not using shared filesystem
+    mountPath: /bitnami/postgresql
+
+  # Default secrets for psql encoded with base64, we suggest to replace them if app will be working in more public environment
+  secrets:
+    psqlPostgresPass: OG9jd1ZIOXlUWnlRTldGUDVTMjk=
+    psqlMostlyPass: OG9jd1ZIOXlUWnlRTldGUDVTMjk=
+    psqlMostlyDatabase: bW9zdGx5
+    psqlMostlyUser: bW9zdGx5
+
+  cm:
+    host: mostly-db
+    mostly_app_db_name: mostly_app
+    mostly_coordinator_db_name: mostly_coordinator
+    mostly_keycloak_db_name: mostly_keycloak
+    port: '5432'
+
+### RabbitMQ settings
+RABBITMQ: 
+  name: mostly-rabbitmq
+
+  image:
+    name: rabbitmq
+    tag: 3.8.14-management
+
+  ports:
+    containerPort: 5672
+
+  # Below there are minimum requirements, we suggest to update them if platform has more resources avaiable
+  resources:
+    limits:
+      cpu: 800m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi  
+
+  pvc:
+    name: rabbitmq-data
+    size: 20Gi
+    storageClassName: standard-rwo # required to be updated with storage class name that allows ReadWriteOnce access mode and it is not using shared filesystem
+
+  cm:
+    name: rabbitmq
+    host: mostly-rabbitmq
+    port: '5672'
+
+  # Default secrets for rabbitmq encoded with base64, we suggest to replace them if app will be working in more public environment
+  secrets:
+    name: rabbitmq
+    password: bW9zdGx5
+    username: bW9zdGx5
+
+### KEYCLOAK deployment settings
+KEYCLOAK: 
+  name: mostly-keycloak
+
+  replicasCount: 1
+
+  image:
+    name: mostly-keycloak
+    tag: latest
+
+  envs:
+    keycloak_enable_re_captcha: 'false'
+
+  ports:
+    containerPort: 8080
+
+  # Below there are minimum requirements, we suggest to update them if platform has more resources avaiable
+  resources:
+    limits:
+      cpu: 500m
+      memory: 800Mi
+    requests:
+      cpu: 50m
+      memory: 200Mi
+
+  # Default secrets for keycloack encoded with base64, we suggest to replace them if app will be working in more public environment
+  secrets:
+    admin_client_secret: NDgwM2JkMDItODgyZC00YWYxLWJlMTctNmUyM2JjOWJiOTA2
+    admin_password: YWRtaW4=
+    admin_username: YWRtaW4=
+    api_client_secret: ZWU4YzcyNjItOTk4Mi00Yjc4LWJhZDQtNzE0MzAwNWUzYmIz
+
+### COORDINATOR
+CORDINATOR: 
+  name: mostly-coordinator
+
+  replicasCount: 1
+
+  image:
+    name: mostly-coordinator
+    tag: latest
+
+  ports:
+    containerPort: 8081
+
+  # Below there are minimum requirements, we suggest to update them if platform has more resources avaiable
+  resources:
+    limits:
+      cpu: '1'
+      memory: 3Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+
+  envs:
+    jdk_java_options: '-Xms5g -Xmx30g'
+    coordinator_java_tool_options: ''
+    coordinator_spring_profiles: dev,kubernetes,rabbitmq
+    jobs_image_tag: latest #<-- required to be updated with provided by Mostly AI image tag
+    engine_image_tag: latest #<-- required to be updated with provided by Mostly AI image tag
+    mostly_agent_max_agents: '10' #<-- maximum number of agents that can be run in parallel, more agents means more resources are required but also much faster jobs processing
+    mostly_worker_label: mostly_worker
+    agent_engine_annotation: '{"linkerd.io/inject": "disabled"}' #<-- to see if the agent and engine jobs manifests will work with the addition of this annotation 
+    # below there are resources that are required for each agent and engine, we suggest to update them if platform has more resources avaiable, this is also connected with mostly_agent_max_agents as the number of agents is multiplied by below resources
+    jobs_resources:
+      limits:
+        agent_cpu: 1000m # Measured in milicores; "1000m" = 1 cpu core
+        agent_memory: 5Gi # Measured in Gigabytes; "5Gi" = 5 Gb
+        engine_cpu: 2000m
+        engine_memory: 10Gi
+      requests: 
+        agent_cpu: 500m 
+        agent_memory: 3Gi
+        engine_cpu: 1000m
+        engine_memory: 5Gi
+
+    is_ocp: 'false' #<-- true or false, depends it we are deploying on OpenShift or not
+
+  pvc:
+    name: mostly-data # The name is vidly used by many containers, so it is not recommended to change it.
+    size: 50Gi # The size can be extended if storage class allows it.
+    accessMode: ReadWriteMany # This means that multiple pods can read and write to the same volume at the same time.
+    storageClassName: standard-rwx
+
+### DATA
+DATA:
+  name: mostly-data
+
+  replicasCount: 1
+
+  image:
+    name: mostly-data
+    tag: latest
+
+  ports:
+    containerPort: 8000
+
+  resources:
+    limits:
+      cpu: '7'
+      memory: 8Gi
+    requests:
+      cpu: 500m
+      memory: 2Gi
+  
+  passphrase: gA4ih2JwWjtQEnCODvpC5VhlDZEANjBJFKAxAGhIkBnRdaq8EE2Cv9pHNt5fH56x
+
+### APP
+APP:
+  name: mostly-app
+
+  replicasCount: 1
+
+  image:
+    name: mostly-app-enterprise
+    tag: latest
+
+  ports:
+    containerPort: 8080
+
+  # Below there are minimum requirements, we suggest to update them if platform has more resources avaiable
+  resources:
+    limits:
+      cpu: '1'
+      memory: 3Gi
+    requests:
+      cpu: 500m
+      memory: 2Gi
+
+  envs:
+    mostlyAppPackageVersion: v3.0.0
+    app_spring_profiles: prod,rabbitmq
+
+  pvc:
+    name: mostly-license
+    size: 50Mi
+    storageClassName: standard-rwo # required to be updated with storage class name that allows ReadWriteOnce access mode and it is not using shared filesystem
+
+### UI
+UI:
+  name: mostly-ui
+
+  replicasCount: 1
+
+  imageInit:
+    name: mostly-ai-docs
+    tag: latest
+
+  image:
+    name: mostly-app-ui #<-- required to be updated with provided by Mostly AI repository
+    tag: latest #<-- required to be updated with provided by Mostly AI image tag
+
+  ports:
+    containerPort: 8888
+
+  # Below there are minimum requirements, we suggest to update them if platform has more resources avaiable
+  resources:
+    limits:
+      cpu: 300m
+      memory: 500Mi
+    requests:
+      cpu: 10m
+      memory: 500Mi

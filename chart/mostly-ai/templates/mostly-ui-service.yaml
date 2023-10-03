@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.UI.name }}
+spec:
+  ports:
+    - name: {{ .Values.UI.name }}
+      protocol: TCP
+      port: {{ .Values.UI.ports.containerPort }}
+      targetPort: {{ .Values.UI.ports.containerPort }}
+  {{- if eq .Values.platform "ocp" }}
+  type: ClusterIP
+  {{- end }}
+  {{- if eq .Values.platform "k8s" }}
+  type: NodePort
+  {{- end }}
+  selector:
+    app: {{ .Values.UI.name }}

@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.RABBITMQ.pvc.name }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.RABBITMQ.pvc.size }}
+  volumeMode: Filesystem
+  {{- if .Values.RABBITMQ.pvc.storageClassName }}
+  storageClassName: {{ .Values.RABBITMQ.pvc.storageClassName }}
+  {{- end }}

@@ -1,0 +1,47 @@
+{{- if .Values.route }}
+---
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: {{ .Values.APP.name }}-api
+  annotations:
+    {{- if .Values.route.annotations }}
+    {{- toYaml $.Values.route.annotations | nindent 4 }}
+    {{- end }}
+spec:
+  host: {{ .Values.route.fqdn }}
+  path: /api
+  to:
+    kind: Service
+    name: {{ .Values.APP.name }}
+    weight: 100
+  port:
+    targetPort: {{ .Values.APP.name }}
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None
+
+---
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: {{ .Values.APP.name }}-actuator
+  annotations:
+    {{- if .Values.route.annotations }}
+    {{- toYaml $.Values.route.annotations | nindent 4 }}
+    {{- end }}
+spec:
+  host: {{ .Values.route.fqdn }}
+  path: /actuator
+  to:
+    kind: Service
+    name: {{ .Values.APP.name }}
+    weight: 100
+  port:
+    targetPort: {{ .Values.APP.name }}
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None
+{{- end }}

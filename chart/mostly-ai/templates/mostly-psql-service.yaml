@@ -1,0 +1,15 @@
+{{- if eq .Values.PSQL.local_deployment true }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.PSQL.ports.name }}
+spec:
+  ports:
+    - name: {{ .Values.PSQL.ports.name }}
+      protocol: TCP
+      port: {{ .Values.PSQL.ports.containerPort }}
+      targetPort: {{ .Values.PSQL.ports.containerPort }}
+  type: ClusterIP
+  selector:
+    component: {{ .Values.PSQL.name }}
+{{- end }}

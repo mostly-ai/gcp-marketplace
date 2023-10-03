@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.KEYCLOAK.name }}
+spec:
+  ports:
+    - name: {{ .Values.KEYCLOAK.name }}
+      protocol: TCP
+      port: {{ .Values.KEYCLOAK.ports.containerPort }}
+      targetPort: {{ .Values.KEYCLOAK.ports.containerPort }}
+  {{- if eq .Values.platform "ocp" }}
+  type: ClusterIP
+  {{- end }}
+  {{- if eq .Values.platform "k8s" }}
+  type: NodePort
+  {{- end }}
+  selector:
+    app: {{ .Values.KEYCLOAK.name }}
