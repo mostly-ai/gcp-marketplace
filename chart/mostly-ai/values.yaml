@@ -25,7 +25,6 @@ httpProtocol: https
 # Below there is example for Nginx ingress, if GKE ALB is used, then ingressClassName: gce have to be added to ingress section.
 # Overall you can use any ingress controller, but you have to update ingress section with proper annotations.
 ingress:
-  fqdn: mostly.example.com
   ingressClassName: nginx
   annotations:
     # Ingress Annotations:
@@ -35,7 +34,7 @@ ingress:
     kubernetes.io/ingress.class: nginx
     cert-manager.io/cluster-issuer: letsencrypt-prod # Let's Encrypt Prod will be used as a Cluster Issuer along with cert-manager to dynamically manage domain certificates generation and renewal
     nginx.ingress.kubernetes.io/default-backend: ingress-nginx-controller
-    nginx.ingress.kubernetes.io/cors-allow-origin: https://*.mostly.example.com
+    #nginx.ingress.kubernetes.io/cors-allow-origin: https://*.mostly.example.com
     nginx.ingress.kubernetes.io/enable-cors: "true"
     nginx.ingress.kubernetes.io/cors-allow-methods: "PUT, GET, POST, OPTIONS"
     nginx.ingress.kubernetes.io/proxy-body-size: 10240m

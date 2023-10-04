@@ -238,7 +238,6 @@ helm template "${CHART_NAME}" chart/mostly-ai \
   --set CORDINATOR.image.tag="${COORDINATOR_TAG}" \
   --set KEYCLOAK.image.tag="${KEYCLOAK_TAG}" \
   --set domain="${DOMAIN_NAME}" \
-  --set ingress.fqdn="${DOMAIN_NAME}" \
   --set ingress.annotations."nginx\.ingress\.kubernetes\.io/cors-allow-origin"="https://*.${DOMAIN_NAME}"
 ```
 
@@ -258,7 +257,6 @@ helm upgrade --install "${CHART_NAME}" chart/mostly-ai \
   --set CORDINATOR.image.tag="${COORDINATOR_TAG}" \
   --set KEYCLOAK.image.tag="${KEYCLOAK_TAG}" \
   --set domain="${DOMAIN_NAME}" \
-  --set ingress.fqdn="${DOMAIN_NAME}" \
   --set ingress.annotations."nginx\.ingress\.kubernetes\.io/cors-allow-origin"="https://*.${DOMAIN_NAME}"
 ```
 
@@ -324,7 +322,6 @@ helm upgrade --install "${CHART_NAME}" chart/mostly-ai \
   --set CORDINATOR.image.tag="${COORDINATOR_TAG}" \
   --set KEYCLOAK.image.tag="${KEYCLOAK_TAG}" \
   --set domain="${DOMAIN_NAME}" \
-  --set ingress.fqdn="${DOMAIN_NAME}" \
   --set ingress.annotations."nginx\.ingress\.kubernetes\.io/cors-allow-origin"="https://*.${DOMAIN_NAME}" \
   --set APP.replicasCount=3 \
 

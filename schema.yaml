@@ -1,16 +1,22 @@
 x-google-marketplace:
   schemaVersion: v2
-
   applicationApiVersion: v1beta1
-  # The published version is required and MUST match the tag
-  # of the deployer image
-  publishedVersion: '1.113'
+  publishedVersion: '1.113.0'
+
+  clusterConstraints:
+    k8sVersion: ">=1.18.0"
+    resources:
+    - replicas: 2
+      requests:
+        cpu: 8
+        memory: 8Gi
+
   publishedVersionMetadata:
     releaseNote: >-
       MostlyAI first GCP release.
 
   images:
-    '':
+    app-enterprise:
       properties:
         repository:
           type: REGISTRY
@@ -18,6 +24,25 @@ x-google-marketplace:
           type: REPO_WITHOUT_REGISTRY
         APP.image.tag:
           type: TAG
+
+    app-ui:
+      properties:
+        repository:
+          type: REGISTRY
+        UI.image.name:
+          type: REPO_WITHOUT_REGISTRY
+        UI.image.tag:
+          type: TAG
+
+    ai-docs:
+      properties:
+        repository:
+          type: REGISTRY
+        UI.imageInit.name:
+          type: REPO_WITHOUT_REGISTRY
+        UI.imageInit.tag:
+          type: TAG
+
     data:
       properties:
         repository:
@@ -54,7 +79,7 @@ x-google-marketplace:
         RABBITMQ.image.tag:
           type: TAG
 
-    psql:
+    postgresql:
       properties:
         repository:
           type: REGISTRY
@@ -63,25 +88,7 @@ x-google-marketplace:
         PSQL.image.tag:
           type: TAG
 
-    ui:
-      properties:
-        repository:
-          type: REGISTRY
-        UI.image.name:
-          type: REPO_WITHOUT_REGISTRY
-        UI.image.tag:
-          type: TAG
-
-    docs:
-      properties:
-        repository:
-          type: REGISTRY
-        UI.imageInit.name:
-          type: REPO_WITHOUT_REGISTRY
-        UI.imageInit.tag:
-          type: TAG
-
-    engine:
+    engine-v2:
       properties:
         repository:
           type: REGISTRY
@@ -99,8 +106,13 @@ properties:
     type: string
     x-google-marketplace:
       type: NAMESPACE
+  domain:
+    type: string
+    title: The domain name
+    default: mostlyai.company.com
+    description: The fully qualified domain name of your app, for example mostlyai.company.com
 
 required:
 - name
 - namespace
-
+- domain

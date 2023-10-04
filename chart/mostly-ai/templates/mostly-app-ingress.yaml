@@ -11,10 +11,10 @@ spec:
   {{- end }}
   tls:
   - hosts:
-    - {{ .Values.ingress.fqdn }}
+    - {{ .Values.domain }}
     secretName: {{ .Values.APP.name }}-tls-cert
   rules:
-    - host: {{ .Values.ingress.fqdn }}
+    - host: {{ .Values.domain }}
       http:
         paths:
           - path: /
