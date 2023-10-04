@@ -152,7 +152,7 @@ KEYCLOAK:
 
   image:
     name: mostly-keycloak
-    tag: latest
+    tag: v113
 
   envs:
     keycloak_enable_re_captcha: 'false'
@@ -184,7 +184,7 @@ CORDINATOR:
 
   image:
     name: mostly-coordinator
-    tag: latest
+    tag: v113
 
   ports:
     containerPort: 8081
@@ -203,7 +203,8 @@ CORDINATOR:
     coordinator_java_tool_options: ''
     coordinator_spring_profiles: dev,kubernetes,rabbitmq
     jobs_image_tag: latest #<-- required to be updated with provided by Mostly AI image tag
-    engine_image_tag: latest #<-- required to be updated with provided by Mostly AI image tag
+    engine_image_name: mostly-engine-v2
+    engine_image_tag: v113.3 #<-- required to be updated with provided by Mostly AI image tag
     mostly_agent_max_agents: '10' #<-- maximum number of agents that can be run in parallel, more agents means more resources are required but also much faster jobs processing
     mostly_worker_label: mostly_worker
     agent_engine_annotation: '{"linkerd.io/inject": "disabled"}' #<-- to see if the agent and engine jobs manifests will work with the addition of this annotation 
@@ -236,7 +237,7 @@ DATA:
 
   image:
     name: mostly-data
-    tag: latest
+    tag: v113.3
 
   ports:
     containerPort: 8000
@@ -259,7 +260,7 @@ APP:
 
   image:
     name: mostly-app-enterprise
-    tag: latest
+    tag: v113.2
 
   ports:
     containerPort: 8080
@@ -290,11 +291,11 @@ UI:
 
   imageInit:
     name: mostly-ai-docs
-    tag: latest
+    tag: v111
 
   image:
     name: mostly-app-ui #<-- required to be updated with provided by Mostly AI repository
-    tag: latest #<-- required to be updated with provided by Mostly AI image tag
+    tag: v113.3 #<-- required to be updated with provided by Mostly AI image tag
 
   ports:
     containerPort: 8888

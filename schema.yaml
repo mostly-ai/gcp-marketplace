@@ -8,8 +8,87 @@ x-google-marketplace:
   publishedVersionMetadata:
     releaseNote: >-
       MostlyAI first GCP release.
-  # The images property will be filled in during part 2
-  images: {}
+
+  images:
+    '':
+      properties:
+        repository:
+          type: REGISTRY
+        APP.image.name:
+          type: REPO_WITHOUT_REGISTRY
+        APP.image.tag:
+          type: TAG
+    data:
+      properties:
+        repository:
+          type: REGISTRY
+        DATA.image.name:
+          type: REPO_WITHOUT_REGISTRY
+        DATA.image.tag:
+          type: TAG
+
+    coordinator:
+      properties:
+        repository:
+          type: REGISTRY
+        CORDINATOR.image.name:
+          type: REPO_WITHOUT_REGISTRY
+        CORDINATOR.image.tag:
+          type: TAG
+
+    keycloak:
+      properties:
+        repository:
+          type: REGISTRY
+        KEYCLOAK.image.name:
+          type: REPO_WITHOUT_REGISTRY
+        KEYCLOAK.image.tag:
+          type: TAG
+
+    rabbitmq:
+      properties:
+        repository:
+          type: REGISTRY
+        RABBITMQ.image.name:
+          type: REPO_WITHOUT_REGISTRY
+        RABBITMQ.image.tag:
+          type: TAG
+
+    psql:
+      properties:
+        repository:
+          type: REGISTRY
+        PSQL.image.name:
+          type: REPO_WITHOUT_REGISTRY
+        PSQL.image.tag:
+          type: TAG
+
+    ui:
+      properties:
+        repository:
+          type: REGISTRY
+        UI.image.name:
+          type: REPO_WITHOUT_REGISTRY
+        UI.image.tag:
+          type: TAG
+
+    docs:
+      properties:
+        repository:
+          type: REGISTRY
+        UI.imageInit.name:
+          type: REPO_WITHOUT_REGISTRY
+        UI.imageInit.tag:
+          type: TAG
+
+    engine:
+      properties:
+        repository:
+          type: REGISTRY
+        CORDINATOR.envs.engine_image_name:
+          type: REPO_WITHOUT_REGISTRY
+        CORDINATOR.envs.engine_image_tag:
+          type: TAG
 
 properties:
   name:
