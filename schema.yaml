@@ -16,7 +16,7 @@ x-google-marketplace:
       MostlyAI first GCP release.
 
   images:
-    app-enterprise:
+    '':
       properties:
         repository:
           type: REGISTRY
