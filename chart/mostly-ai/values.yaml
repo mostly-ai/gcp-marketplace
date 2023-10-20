@@ -7,7 +7,7 @@ docker_secret: ""
 # or image pull secret name can be defined, so above json will be not used
 imagePullSecrets: ""
 
-repository: gcr.io/mostlyai-public/synthetic-data-platform # The public Google Container Registry (GCR) repository
+repository: gcr.io/mostlyai-public/mostly-ai # The public Google Container Registry (GCR) repository
 imagePullPolicy: IfNotPresent
 dedicatedAppNodes: false 
 
@@ -70,7 +70,7 @@ PSQL:
   name: mostly-psql
   image:
     name: postgresql
-    tag: 14.5.0-debian-11-r6
+    tag: 16.0.0-debian-11-r13
     imagePullPolicy: IfNotPresent
     imagePullSecrets: mostly-docker-cfg
 
@@ -113,7 +113,7 @@ RABBITMQ:
 
   image:
     name: rabbitmq
-    tag: 3.8.14-management
+    tag: 3.12.6-management
 
   ports:
     containerPort: 5672
@@ -150,8 +150,8 @@ KEYCLOAK:
   replicasCount: 1
 
   image:
-    name: mostly-keycloak
-    tag: v113
+    name: keycloak
+    tag: "1.113"
 
   envs:
     keycloak_enable_re_captcha: 'false'
@@ -182,8 +182,8 @@ CORDINATOR:
   replicasCount: 1
 
   image:
-    name: mostly-coordinator
-    tag: v113
+    name: coordinator
+    tag: "1.113"
 
   ports:
     containerPort: 8081
@@ -205,7 +205,7 @@ CORDINATOR:
     jobs_image_name: mostly-agent
     engine_image_name: mostly-engine-v2 # image tag will be used from engine_image_tag
     qa_image_name: mostly-qa # image tag will be used from engine_image_tag
-    engine_image_tag: v113.3 #<-- required to be updated with provided by Mostly AI image tag for core components: engine-v2, qa and data
+    engine_image_tag: latest #<-- required to be updated with provided by Mostly AI image tag for core components: engine-v2, qa and data
     mostly_agent_max_agents: '10' #<-- maximum number of agents that can be run in parallel, more agents means more resources are required but also much faster jobs processing
     mostly_worker_label: mostly_worker
     agent_engine_annotation: '{"linkerd.io/inject": "disabled"}' #<-- to see if the agent and engine jobs manifests will work with the addition of this annotation 
@@ -238,7 +238,7 @@ DATA:
 
   image:
     name: mostly-data
-    tag: v113.3
+    tag: "1.113"
 
   ports:
     containerPort: 8000
@@ -260,8 +260,8 @@ APP:
   replicasCount: 1
 
   image:
-    name: mostly-app-enterprise
-    tag: v113.2
+    name: ''
+    tag: "1.113"
 
   ports:
     containerPort: 8080
@@ -291,12 +291,12 @@ UI:
   replicasCount: 1
 
   imageInit:
-    name: mostly-ai-docs
-    tag: v111
+    name: docs
+    tag: "1.113"
 
   image:
-    name: mostly-app-ui #<-- required to be updated with provided by Mostly AI repository
-    tag: v113.3 #<-- required to be updated with provided by Mostly AI image tag
+    name: app-ui #<-- required to be updated with provided by Mostly AI repository
+    tag: "1.113" #<-- required to be updated with provided by Mostly AI image tag
 
   ports:
     containerPort: 8888

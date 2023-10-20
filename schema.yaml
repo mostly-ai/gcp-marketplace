@@ -43,15 +43,6 @@ x-google-marketplace:
         UI.imageInit.tag:
           type: TAG
 
-    data:
-      properties:
-        repository:
-          type: REGISTRY
-        DATA.image.name:
-          type: REPO_WITHOUT_REGISTRY
-        DATA.image.tag:
-          type: TAG
-
     coordinator:
       properties:
         repository:
@@ -88,13 +79,40 @@ x-google-marketplace:
         PSQL.image.tag:
           type: TAG
 
-    engine-v2:
+    mostly-data:
+      properties:
+        repository:
+          type: REGISTRY
+        DATA.image.name:
+          type: REPO_WITHOUT_REGISTRY
+        DATA.image.tag:
+          type: TAG
+
+    mostly-engine-v2:
       properties:
         repository:
           type: REGISTRY
         CORDINATOR.envs.engine_image_name:
           type: REPO_WITHOUT_REGISTRY
         CORDINATOR.envs.engine_image_tag:
+          type: TAG
+
+    mostly-qa:
+      properties:
+        repository:
+          type: REGISTRY
+        CORDINATOR.envs.qa_image_name:
+          type: REPO_WITHOUT_REGISTRY
+        CORDINATOR.envs.engine_image_tag:
+          type: TAG
+
+    mostly-agent:
+      properties:
+        repository:
+          type: REGISTRY
+        CORDINATOR.envs.jobs_image_name:
+          type: REPO_WITHOUT_REGISTRY
+        CORDINATOR.envs.jobs_image_tag:
           type: TAG
 
 properties:
