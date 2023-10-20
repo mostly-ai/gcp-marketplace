@@ -201,9 +201,11 @@ CORDINATOR:
     jdk_java_options: '-Xms5g -Xmx30g'
     coordinator_java_tool_options: ''
     coordinator_spring_profiles: dev,kubernetes,rabbitmq
-    jobs_image_tag: latest #<-- required to be updated with provided by Mostly AI image tag
-    engine_image_name: mostly-engine-v2
-    engine_image_tag: v113.3 #<-- required to be updated with provided by Mostly AI image tag
+    jobs_image_tag: latest #<-- required to be updated with provided by Mostly AI image tag for agent
+    jobs_image_name: mostly-agent
+    engine_image_name: mostly-engine-v2 # image tag will be used from engine_image_tag
+    qa_image_name: mostly-qa # image tag will be used from engine_image_tag
+    engine_image_tag: v113.3 #<-- required to be updated with provided by Mostly AI image tag for core components: engine-v2, qa and data
     mostly_agent_max_agents: '10' #<-- maximum number of agents that can be run in parallel, more agents means more resources are required but also much faster jobs processing
     mostly_worker_label: mostly_worker
     agent_engine_annotation: '{"linkerd.io/inject": "disabled"}' #<-- to see if the agent and engine jobs manifests will work with the addition of this annotation 
