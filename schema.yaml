@@ -19,7 +19,7 @@ x-google-marketplace:
     '':
       properties:
         repository:
-          type: REPO_WITHOUT_REGISTRY
+          type: REPO_WITH_REGISTRY
         APP.image.name:
           type: REPO_WITHOUT_REGISTRY
         APP.image.tag:
