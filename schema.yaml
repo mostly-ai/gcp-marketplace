@@ -9,7 +9,7 @@ x-google-marketplace:
     - replicas: 2
       requests:
         cpu: 8
-        memory: 8Gi
+        memory: 16Gi
 
   publishedVersionMetadata:
     releaseNote: >-
@@ -19,7 +19,7 @@ x-google-marketplace:
     '':
       properties:
         repository:
-          type: REGISTRY
+          type: REPO_WITHOUT_REGISTRY
         APP.image.name:
           type: REPO_WITHOUT_REGISTRY
         APP.image.tag:
@@ -34,7 +34,7 @@ x-google-marketplace:
         UI.image.tag:
           type: TAG
 
-    ai-docs:
+    docs:
       properties:
         repository:
           type: REGISTRY
