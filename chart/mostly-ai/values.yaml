@@ -258,6 +258,7 @@ APP:
   name: mostly-app
 
   replicasCount: 1
+  manualDeployment: false
 
   image:
     name: ''
@@ -309,3 +310,24 @@ UI:
     requests:
       cpu: 10m
       memory: 500Mi
+
+### Nginx Ingress Controller
+### https://github.com/kubernetes/ingress-nginx/blob/main/docs/deploy/index.md
+nginx:
+  enabled: true
+  name: ingress-nginx
+  namespace: mostlyai
+  appversion: 1.8.2
+  kube_webhook_certgen_tag: v20230407@sha256:543c40fd093964bc9ab509d3e791f9989963021f1e9e4c9c7b6700b02bfb227b
+
+  image:
+    name: nginx
+    tag: "1.113"
+
+### cert-manager - automatically generate and renew certificates for Nginx ingress
+### https://cert-manager.io/docs/installation/kubectl/
+certManager:
+  enabled: true
+  name: cert-manager
+  appversion: v1.13.1
+  containerPort: 9402

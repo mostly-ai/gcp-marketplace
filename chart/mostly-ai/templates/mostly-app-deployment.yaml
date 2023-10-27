@@ -34,7 +34,11 @@ spec:
         - name: {{ .Values.APP.name }}
           resources:
             {{- toYaml $.Values.APP.resources | nindent 12 }}
-          image: {{ .Values.repository }}/{{ .Values.APP.image.name }}:{{ .Values.APP.image.tag }}
+          image: {{ if .Values.APP.manualDeployment }}
+            {{ .Values.repository }}{{ .Values.APP.image.name }}:{{ .Values.APP.image.tag }}
+            {{ else }}
+            {{ .Values.repository }}/{{ .Values.APP.image.name }}:{{ .Values.APP.image.tag }}
+            {{ end }}
           {{- if eq .Values.platform "ocp" }}
           {{- include "ocp.securityContextContainer" . | nindent 10 }}
           {{- end }}

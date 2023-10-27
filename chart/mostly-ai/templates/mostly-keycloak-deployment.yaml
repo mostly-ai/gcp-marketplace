@@ -30,6 +30,9 @@ spec:
             httpGet:
               path: /auth
               port: {{ .Values.KEYCLOAK.ports.containerPort }}
+            initialDelaySeconds: 120
+            timeoutSeconds: 180
+            periodSeconds: 10
           ports:
             - name: {{ .Values.KEYCLOAK.name }}
               containerPort: {{ .Values.KEYCLOAK.ports.containerPort }}

@@ -78,21 +78,34 @@ Enable the Cloud Filestore API and the Google Kubernetes Engine API.
 
 Note that we will create the cluster in Frankfurt region `europe-west3-a` with initially 2 nodes of type `c2d-highcpu-8` which is a compute-optimized machine family that has 8 vCPUs and 8GB memory per node. We need at least two nodes to afford the application workloads. However, this can be managed via the gcloud command reference in [this link](https://cloud.google.com/sdk/gcloud/reference/container/clusters/create#--num-nodes).
 
+Besides, another node pool will be needed for the Kubernetes worker jobs, it's recommended that each node should have 16 vCPUs and 32GB memory, so the `c2d-highcpu-16` node type will be used. This node will have a desired/minimum size of 2 nodes, and a maximum of 10, with nodes auto-scaler enabled. The `mostly_worker=yes` label has also to be added for worker jobs to start properly.
+
 ```shell
 # Set the below environment variables
 export CLUSTER=mostly-ai-cluster
 export ZONE=europe-west3-a
-export NODE_TYPE=c2d-highcpu-8
-export NODE_COUNT=2
+export DEFAULT_NODE_TYPE=c2d-highcpu-8
+export DEFAULT_NODE_COUNT=2
+export WORKER_NODE_TYPE=c2d-highcpu-16
+export WORKER_NODE_COUNT=2
+export WORKER_NODE_MAX_COUNT=10
 
 # Provision the GKE cluster
 gcloud container clusters create "$CLUSTER" \
---machine-type="$NODE_TYPE" \
---num-nodes="$NODE_COUNT" \
+--machine-type="$DEFAULT_NODE_TYPE" \
+--num-nodes="$DEFAULT_NODE_COUNT" \
 --addons=GcpFilestoreCsiDriver \
 --autoprovisioning-network-tags=healthcheck \
 --zone "$ZONE"
+
+# Create a new node pool for wroker K8s jobs
+gcloud container node-pools create \
+workers-node-pool --cluster="$CLUSTER" \
+--machine-type="$WORKER_NODE_TYPE" --enable-autoscaling \
+--num-nodes="$WORKER_NODE_COUNT" --min-nodes="$WORKER_NODE_COUNT" --max-nodes="$WORKER_NODE_MAX_COUNT" \
+--node-labels=mostly_worker=yes --zone "$ZONE"
 ```
+
 
 #### Create a new firewall rule to allow the traffic from a couple of GCP IP ranges specified as health checks sources as in the below command.
 
@@ -108,67 +121,11 @@ gcloud compute firewall-rules create fw-allow-health-check-and-proxy \
    --rules=tcp:9376
 ```
 
-#### Configure `kubectl` to connect to the new cluster:
+#### Configure `kubectl` to connect to the new cluster from your computer:
 
 ```shell
 gcloud container clusters get-credentials "$CLUSTER" --zone "$ZONE"
 ```
-
-#### Deploy Nginx Ingress Controller to manage the public endpoints securely
-
-GCE Ingress has some limitations to deal with the deployed applications, as there are a lot of apps redirections and success status codes (like 303 and 404) that can not be handled by GCE. [Related issue](https://github.com/kubernetes/ingress-gce/issues/42)
-
-Therefore, Nginx Ingress Controller will be used since it's more reliable and can achieve this easily. Cert-Manager will also be used along with ClusterIssuer to automatically generate and renew TLS certificates for the public domain. So, we can use the below commands to deploy both `nginx-ingress-controller` & `cert-manager` Helm chart prior to deploy the product:
-
-```shell
-# Add the apps repos
-helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-helm repo add jetstack https://charts.jetstack.io
-helm repo update
-
-# Install Nginx Ingress Controller
-helm install ingress-nginx \
-ingress-nginx/ingress-nginx \
---create-namespace \
---namespace ingress-nginx
-
-# Install cert-manager
-helm install \
-  cert-manager jetstack/cert-manager \
-  --namespace cert-manager \
-  --create-namespace \
-  --version v1.6.3 \
-  --set installCRDs=true
-
-# wait for 2 minutesfor cert-managerCRDs to be fully installed before installing the ClusterIssuer
-sleep 60
-
-# Install the Cluster Issuer (Let's Encrypt Prod)
-cd gcp-marketplace/resources/manifest
-kubectl apply -f cluster-issuer.yaml
-```
-
-Once both `nginx-ingress-controller` & `cert-manager` are installed. Obtain the Public IP address created for Nginx Ingress so that it can be created for the domain name in the DNS system:
-
-```shell
-kubectl get svc ingress-nginx-controller --output jsonpath='{.status.loadBalancer.ingress[0].ip}'
-```
-Note down the public IP address; as it will be needed in the next step.
-
-
-#### Create the DNS record for your domain
-
-One last step is to take note of the new Static IP address (created in the previous step), and create a new `DNS A record` in your DNS system, with a value of the domain name that will be used in the Network Load Balancer for Mostly AI app.
-
-**For example:** if the domain that you will use for Mostly AI app is: `mostly.mycompany.com`, and the static IP address that got created in the previous step is: `1.2.3.4`, then you've to create a new `A` record as shown below:
-* Log into your DNS system.
-* Navigate to the desired domain name, in this case: `mycompany.com`.
-* Create a new `A` record as below:
-  * Name: `mostly`
-  * Value (IPv4 address): `1.2.3.4`
-  * Type: `A`
-  * TTL: `300`
-
 
 #### Clone this repo
 
@@ -178,7 +135,7 @@ Clone this repo and the associated tools repo.
 git clone --recursive https://github.com/mostly-ai/gcp-marketplace.git
 ```
 
-#### Install the Application resource definition
+#### Install the application resource definition
 
 An Application resource is a collection of individual Kubernetes components, such as Services, Deployments, and so on, that you can manage as a group.
 
@@ -205,12 +162,12 @@ Mostly AI Helm Chart has many components, each one has its own Docker image. The
 For example: for the `v113` release, the below image tags will be used:
 
 ```shell
-export APP_TAG=v113.2
-export UI_TAG=v113.3
-export UI_DOCS_TAG=v111
-export DATA_TAG=v113.3
-export COORDINATOR_TAG=v113
-export KEYCLOAK_TAG=v113
+export APP_TAG=1.113
+export UI_TAG=1.113
+export UI_DOCS_TAG=1.113
+export DATA_TAG=1.113
+export COORDINATOR_TAG=1.113
+export KEYCLOAK_TAG=1.113
 ```
 
 **Configure other application variables**:
@@ -232,12 +189,14 @@ cd gcp-marketplace
 helm template "${CHART_NAME}" chart/mostly-ai \
   --namespace "${NAMESPACE}" \
   --set APP.image.tag="${APP_TAG}" \
+  --set APP.manualDeployment=true \
   --set UI.image.tag="${UI_TAG}" \
   --set UI.imageInit.tag="${UI_DOCS_TAG}" \
   --set DATA.image.tag="${DATA_TAG}" \
   --set CORDINATOR.image.tag="${COORDINATOR_TAG}" \
   --set KEYCLOAK.image.tag="${KEYCLOAK_TAG}" \
   --set domain="${DOMAIN_NAME}" \
+  --set nginx.namespace="${NAMESPACE}" \
   --set ingress.annotations."nginx\.ingress\.kubernetes\.io/cors-allow-origin"="https://*.${DOMAIN_NAME}"
 ```
 
@@ -251,14 +210,46 @@ helm upgrade --install "${CHART_NAME}" chart/mostly-ai \
   --create-namespace \
   --namespace "${NAMESPACE}" \
   --set APP.image.tag="${APP_TAG}" \
+  --set APP.manualDeployment=true \
   --set UI.image.tag="${UI_TAG}" \
   --set UI.imageInit.tag="${UI_DOCS_TAG}" \
   --set DATA.image.tag="${DATA_TAG}" \
   --set CORDINATOR.image.tag="${COORDINATOR_TAG}" \
   --set KEYCLOAK.image.tag="${KEYCLOAK_TAG}" \
   --set domain="${DOMAIN_NAME}" \
+  --set nginx.namespace="${NAMESPACE}" \
   --set ingress.annotations."nginx\.ingress\.kubernetes\.io/cors-allow-origin"="https://*.${DOMAIN_NAME}"
 ```
+
+#### Install the Cluster Issuer (Let's Encrypt Prod)
+This will automatically generate and renew free certificates automatically using `cert--manager`, which is deployed as a part of the Helm chart. All you need to do after deploying the cluster issuer is to obtain the Nginx ingress controller public IP address, configure it in your DNS system, and cert-manager/Let's Encrypt will take care of the rest
+
+```shell
+# Install the Cluster Issuer (Let's Encrypt Prod)
+cd gcp-marketplace/resources/manifest
+kubectl apply -f cluster-issuer.yaml
+```
+
+Obtain the Public IP address created for Nginx Ingress so that it can be created for the domain name in the DNS system:
+
+```shell
+kubectl get svc ingress-nginx-controller --output jsonpath='{.status.loadBalancer.ingress[0].ip}'
+```
+Note down the public IP address; as it will be needed in the next step.
+
+#### Create the DNS record for your domain
+
+One last step is to take note of the new Static IP address (created in the previous step), and create a new `DNS A record` in your DNS system, with a value of the domain name that will be used in the Network Load Balancer for Mostly AI app.
+
+**For example:** if the domain that you will use for Mostly AI app is: `mostly.mycompany.com`, and the static IP address that got created in the previous step is: `1.2.3.4`, then you've to create a new `A` record as shown below:
+* Log into your DNS system.
+* Navigate to the desired domain name, in this case: `mycompany.com`.
+* Create a new `A` record as below:
+  * Name: `mostly`
+  * Value (IPv4 address): `1.2.3.4`
+  * Type: `A`
+  * TTL: `300`
+
 
 #### Check the status of the mostly-ai cluster
 
