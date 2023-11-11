@@ -151,7 +151,7 @@ KEYCLOAK:
 
   image:
     name: keycloak
-    tag: "1.113"
+    tag: "113.6"
 
   envs:
     keycloak_enable_re_captcha: 'false'
@@ -183,7 +183,7 @@ CORDINATOR:
 
   image:
     name: coordinator
-    tag: "1.113"
+    tag: "113.6"
 
   ports:
     containerPort: 8081
@@ -238,7 +238,7 @@ DATA:
 
   image:
     name: mostly-data
-    tag: "1.113"
+    tag: "113.6"
 
   ports:
     containerPort: 8000
@@ -262,7 +262,7 @@ APP:
 
   image:
     name: ''
-    tag: "1.113"
+    tag: "113.6"
 
   ports:
     containerPort: 8080
@@ -293,11 +293,11 @@ UI:
 
   imageInit:
     name: docs
-    tag: "1.113"
+    tag: "113.6"
 
   image:
     name: app-ui #<-- required to be updated with provided by Mostly AI repository
-    tag: "1.113" #<-- required to be updated with provided by Mostly AI image tag
+    tag: "113.6" #<-- required to be updated with provided by Mostly AI image tag
 
   ports:
     containerPort: 8888
@@ -322,7 +322,7 @@ nginx:
 
   image:
     name: nginx
-    tag: "1.113"
+    tag: "113.6"
 
 ### cert-manager - automatically generate and renew certificates for Nginx ingress
 ### https://cert-manager.io/docs/installation/kubectl/
