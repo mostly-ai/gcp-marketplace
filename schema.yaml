@@ -34,15 +34,6 @@ x-google-marketplace:
         UI.image.tag:
           type: TAG
 
-    docs:
-      properties:
-        repository:
-          type: REGISTRY
-        UI.imageInit.name:
-          type: REPO_WITHOUT_REGISTRY
-        UI.imageInit.tag:
-          type: TAG
-
     coordinator:
       properties:
         repository:

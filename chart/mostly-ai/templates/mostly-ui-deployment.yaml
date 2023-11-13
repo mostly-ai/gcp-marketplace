@@ -23,18 +23,6 @@ spec:
       volumes:
         - name: mostly-docs
           emptyDir: {}
-      initContainers:
-        - name: mostly-docs
-          image: {{ .Values.repository }}/{{ .Values.UI.imageInit.name }}:{{ .Values.UI.imageInit.tag }}
-          {{- if eq .Values.platform "ocp" }}
-          {{- include "ocp.securityContextContainer" . | nindent 10 }}
-          {{- end }}
-          volumeMounts:
-            - name: mostly-docs
-              mountPath: /www/docs
-          terminationMessagePath: /dev/termination-log
-          terminationMessagePolicy: File
-          imagePullPolicy: {{ .Values.imagePullPolicy }}
       containers:
         - name: {{ .Values.UI.name }}
           resources:

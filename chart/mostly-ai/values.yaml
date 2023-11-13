@@ -291,10 +291,6 @@ UI:
 
   replicasCount: 1
 
-  imageInit:
-    name: docs
-    tag: "113.6"
-
   image:
     name: app-ui #<-- required to be updated with provided by Mostly AI repository
     tag: "113.6" #<-- required to be updated with provided by Mostly AI image tag
