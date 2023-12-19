@@ -1,4 +1,4 @@
-{{- if .Values.certManager.enabled -}}
+{{- if .Values.nginx.enabled -}}
 apiVersion: v1
 automountServiceAccountToken: true
 kind: ServiceAccount

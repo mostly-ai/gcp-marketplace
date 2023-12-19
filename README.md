@@ -56,9 +56,7 @@ You'll need the following tools in your development environment. If you are usin
 -   [kubectl](https://kubernetes.io/docs/reference/kubectl/overview/)
 -   [docker](https://docs.docker.com/install/)
 -   [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
--   [cqlsh](https://pypi.org/project/cqlsh/)
 -   [helm](https://helm.sh/)
--   [envsubst](https://command-not-found.com/envsubst)
 
 Configure `gcloud` as a Docker credential helper:
 
@@ -162,12 +160,12 @@ Mostly AI Helm Chart has many components, each one has its own Docker image. The
 For example: for the `v113` release, the below image tags will be used:
 
 ```shell
-export APP_TAG=1.113
-export UI_TAG=1.113
-export UI_DOCS_TAG=1.113
-export DATA_TAG=1.113
-export COORDINATOR_TAG=1.113
-export KEYCLOAK_TAG=1.113
+export APP_TAG=113.6.0
+export UI_TAG=113.6.0
+export UI_DOCS_TAG=113.6.0
+export DATA_TAG=113.6.0
+export COORDINATOR_TAG=113.6.0
+export KEYCLOAK_TAG=113.6.0
 ```
 
 **Configure other application variables**:
@@ -290,6 +288,14 @@ You can check the **Network Load Balancer** that got created by the GCE Ingress 
   * List of Backend services, including the GKE nodes and their health status
   * There are also some other options like: **Endpoint protocol**, **Timeout**, **Logging**...etc.
  
+ ### Using your own domain certificate
+ In case you already have a corporate self-managed domain certificate and don't want to use `cert-manager` to automatiically generate/renew the domian certificates, then you can follow the below steps to integrate it with Nginx ingress resource:
+ * Navigate to the directory where you have the certificate and the private key, and create them as a kubernetes secret:
+   ```
+   kubectl create secret -n "${NAMESPACE}" tls domain-cert --cert=fullchain.pem --key=privkey.pem
+   ```
+* Remove the `cert-manager.io/cluster-issuer` annotation in the `chart/mostly-ai/values.yaml` file (line 35).
+* Make sure that the secret name **matches** the name that is defined in the ingress resource (in the `chart/mostly-ai/templates/mostly-app-ingress.yaml`, under: `tls` > `hosts` > `secretName`)
 
 
 # Scaling mostly-ai application
