@@ -160,12 +160,12 @@ Mostly AI Helm Chart has many components, each one has its own Docker image. The
 For example: for the `v113` release, the below image tags will be used:
 
 ```shell
-export APP_TAG=113.6.0
-export UI_TAG=113.6.0
-export UI_DOCS_TAG=113.6.0
-export DATA_TAG=113.6.0
-export COORDINATOR_TAG=113.6.0
-export KEYCLOAK_TAG=113.6.0
+export APP_TAG=113.8.0
+export UI_TAG=113.8.0
+export UI_DOCS_TAG=113.8.0
+export DATA_TAG=113.8.0
+export COORDINATOR_TAG=113.8.0
+export KEYCLOAK_TAG=113.8.0
 ```
 
 **Configure other application variables**:

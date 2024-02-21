@@ -11,7 +11,7 @@ metadata:
 spec:
   descriptor:
     type: MostlyAI
-    version: '113.6.0'
+    version: '113.8.0'
     description: |-
       With MOSTLY AI, you can generate synthetic data that is highly accurate, protects the private information of your data subjects, and retains the statistical characteristics of your original data.
     maintainers:
